@@ -1,3 +1,5 @@
 debug.py
 逆向工程.md
 开发文档.md
+data/
+__pycache__/
