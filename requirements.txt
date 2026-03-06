@@ -3,8 +3,8 @@ charset-normalizer==3.4.5
 grabber==0.1.0
 greenlet==3.3.2
 idna==3.11
-loguru @ file:///opt/miniconda3/conda-bld/loguru_1762954851241/work
-packaging @ file:///opt/miniconda3/conda-bld/packaging_1761049079150/work
+loguru==0.7.3
+packaging==25.0
 pillow==12.1.1
 playwright==1.58.0
 pyee==13.0.1
