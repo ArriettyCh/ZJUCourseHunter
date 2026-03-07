@@ -124,6 +124,6 @@ def cas_login(username: str, password: str) -> requests.Session:
             return session
 
     # 失败：尝试提取错误信息
-    err_match = re.search(r'id="errormsg"[^>]*>([^<]+)', resp.text)
-    err_msg = err_match.group(1).strip() if err_match else "未知错误"
-    raise RuntimeError(f"登录失败: {err_msg}")
+    # err_match = re.search(r'id="errormsg"[^>]*>([^<]+)', resp.text)
+    # err_msg = err_match.group(1).strip() if err_match else "未知错误"
+    raise RuntimeError(f"登录失败，请重新运行脚本尝试")

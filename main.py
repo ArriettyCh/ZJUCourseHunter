@@ -83,8 +83,7 @@ class CourseHunter:
             try:
                 self.session = cas_login(creds["username"], creds["password"])
             except RuntimeError as e:
-                logger.error(f"自动登录失败: {e}")
-                logger.info("请重新输入凭证。")
+                logger.error(f"自动登录失败，请重新输入账号密码")
                 creds = None
 
         if not creds:
@@ -239,7 +238,7 @@ class CourseHunter:
                 "() => document.documentElement.getAttribute('data-zju-injected') === 'true'"
             )
             if ok:
-                logger.success("✅ 抢课助手已注入！请在页面中点击目标课程的【抢课】按钮。")
+                logger.success("抢课助手已注入！请在页面中点击目标课程的【抢课】按钮")
         except Exception:
             pass
 
