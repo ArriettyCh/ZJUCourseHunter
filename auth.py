@@ -122,7 +122,7 @@ def cas_login(username: str, password: str) -> requests.Session:
         if "cas/login" not in verify_url and "login_slogin" not in verify_url:
             logger.success(f"登录成功！(用户: {username})")
             return session
-
+    
     # 失败：尝试提取错误信息
     # err_match = re.search(r'id="errormsg"[^>]*>([^<]+)', resp.text)
     # err_msg = err_match.group(1).strip() if err_match else "未知错误"

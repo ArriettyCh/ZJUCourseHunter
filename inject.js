@@ -95,11 +95,32 @@
         if (window.parent?.py_grab_func) return window.parent.py_grab_func(payload);
     }
 
+    /** 递归遍历 DOM 节点树，将 <br> 转为顿号分隔符，提取纯文本 */
+    function extractWithSep(el) {
+        if (!el) return "";
+        const parts = [];
+        function walk(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const t = node.textContent.trim();
+                if (t) parts.push(t);
+            } else if (node.nodeName === "BR") {
+                parts.push("\u3001");
+            } else {
+                node.childNodes.forEach(walk);
+            }
+        }
+        walk(el);
+        return parts.join("")
+            .replace(/\u3001+/g, "\u3001")
+            .replace(/^\u3001|\u3001$/g, "")
+            .trim();
+    }
+
     /**
      * 从按钮所在行和面板提取课程详细信息
      * HTML 结构:
      *   panel-heading > .kcmc > a (课程名)  i (学分)
-     *   tr > .jsxm a (教师)  .sksj (上课时间)  .skdd (地点)  .rsxx (余量)
+     *   tr > .jsxm (教师)  .xxq (学期)  .sksj (上课时间)  .skdd (地点)  .rsxx (余量)
      */
     function extractCourseInfo(btn) {
         const tr = btn.closest("tr");
@@ -121,15 +142,16 @@
             }
         }
 
-        let teacher = "", schedule = "", location = "", capacity = "";
+        let teacher = "", semester = "", schedule = "", location = "", capacity = "";
         if (tr) {
-            teacher = tr.querySelector(".jsxm")?.innerText?.trim() || "";
-            schedule = tr.querySelector(".sksj")?.innerText?.trim() || "";
-            location = tr.querySelector(".skdd")?.innerText?.trim() || "";
+            teacher = extractWithSep(tr.querySelector(".jsxm"));
+            semester = tr.querySelector(".xxq")?.innerText?.trim() || "";
+            schedule = extractWithSep(tr.querySelector(".sksj"));
+            location = extractWithSep(tr.querySelector(".skdd"));
             capacity = tr.querySelector(".rsxx")?.innerText?.trim() || "";
         }
 
-        return { xkkh, tabname, name, code, credits, teacher, schedule, location, capacity };
+        return { xkkh, tabname, name, code, credits, teacher, semester, schedule, location, capacity };
     }
 
     /**
@@ -141,11 +163,9 @@
             const overlay = document.createElement("div");
             overlay.className = "hunter-overlay";
 
-            // 构建信息行
             const rows = [
-                ["课程", info.name],
-                info.code   ? ["代码", info.code] : null,
-                ["选课号", info.xkkh],
+                info.code ? ["课程代码", info.code] : null,
+                info.semester ? ["学期", info.semester] : null,
                 info.teacher  ? ["教师", info.teacher] : null,
                 info.schedule ? ["时间", info.schedule] : null,
                 info.location ? ["地点", info.location] : null,
@@ -160,8 +180,8 @@
                 <div class="hunter-modal">
                     <h3>确认开始抢课？</h3>
                     <table class="info-table">${tableHTML}</table>
-                    <p style="font-size:13px;color:#888;margin:0 0 16px;">
-                        确认后浏览器将关闭，脚本进入自动抢课模式。按 Ctrl+C 可随时停止。
+                    <p style="font-size:13px;color:#000;margin:0 0 16px;">
+                        确认后浏览器将关闭，脚本进入自动抢课模式
                     </p>
                     <div class="btn-row">
                         <button class="btn-cancel" id="hunter-cancel">取消</button>
@@ -211,6 +231,13 @@
                 xkkh: info.xkkh,
                 tabname: info.tabname,
                 course_name: info.name,
+                course_code: info.code,
+                credits: info.credits,
+                semester: info.semester,
+                teacher: info.teacher,
+                schedule: info.schedule,
+                location: info.location,
+                capacity: info.capacity,
                 xkzys: "1",
             });
         });

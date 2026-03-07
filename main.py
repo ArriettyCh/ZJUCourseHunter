@@ -2,10 +2,14 @@ import os
 import sys
 import json
 import time
-from getpass import getpass
+from typing import Optional
+from bootstrap_env import ensure_runtime_ready
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ensure_runtime_ready(BASE_DIR)
+
 from playwright.sync_api import sync_playwright
 from loguru import logger
-
 from auth import cas_login
 from grabber import CourseGrabber
 
@@ -13,7 +17,6 @@ from grabber import CourseGrabber
 logger.remove()
 logger.add(sys.stdout, format="<green>{time:HH:mm:ss}</green> | <level>{message}</level>")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INJECT_JS_PATH = os.path.join(BASE_DIR, "inject.js")
 CREDENTIALS_PATH = os.path.join(BASE_DIR, "data/credentials.json")
 
@@ -30,7 +33,7 @@ INDEX_URL = "https://zdbk.zju.edu.cn/jwglxt/xtgl/index_initMenu.html?jsdm=06"
 
 # ── 凭证管理 ──
 
-def load_credentials() -> dict | None:
+def load_credentials() -> Optional[dict]:
     """从本地文件读取保存的账号密码，不存在则返回 None"""
     if not os.path.exists(CREDENTIALS_PATH):
         return None
@@ -138,7 +141,7 @@ class CourseHunter:
                 return
 
             course = self.selected_course
-            logger.info(f"🎯 目标锁定: {course.get('course_name', '未知课程')}")
+            logger.info(f"目标锁定: {course.get('course_name', '未知课程')}")
 
             browser.close()
             logger.info("浏览器已关闭，进入纯请求模式。\n")
@@ -181,7 +184,7 @@ class CourseHunter:
 
         if cookies_for_pw:
             context.add_cookies(cookies_for_pw)
-            logger.debug(f"已注入 {len(cookies_for_pw)} 个 Cookie 到浏览器")
+            # logger.debug(f"已注入 {len(cookies_for_pw)} 个 Cookie 到浏览器")
 
     def _bootstrap_browser_session(self, context):
         """在后台触发 SSO 跳转，让浏览器上下文拿到 jwglxt 侧会话"""

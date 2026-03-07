@@ -53,9 +53,18 @@ class CourseGrabber:
         }
 
         course_name = course_data.get("course_name", "未知课程")
-        logger.info(f"🎯 目标: {course_name}")
-        logger.info(f"📋 选课号: {course_data['xkkh']}")
-        logger.info(f"⏱️  请求间隔: {interval}s | 按 Ctrl+C 可随时停止\n")
+
+        logger.info(f"目标: {course_name}")
+        logger.info(f"选课号: {course_data['xkkh']}")
+        if course_data.get("semester"):
+            logger.info(f"学期: {course_data['semester']}")
+        if course_data.get("teacher"):
+            logger.info(f"教师: {course_data['teacher']}")
+        if course_data.get("schedule"):
+            logger.info(f"时间: {course_data['schedule']}")
+        if course_data.get("location"):
+            logger.info(f"地点: {course_data['location']}")
+        logger.info(f"请求间隔: {interval}s | 按 Ctrl+C 可随时停止\n")
 
         attempt = 0
         while self.running:
@@ -76,14 +85,14 @@ class CourseGrabber:
                 flag = result.get("flag")
 
                 if flag == "1" or "成功" in str(msg):
-                    logger.success(f"#{attempt} ✅ 选课成功! ({elapsed_ms:.0f}ms) | {msg}")
+                    logger.success(f"#{attempt} 选课成功! ({elapsed_ms:.0f}ms) | {msg}")
                     return True
 
                 if "登录" in str(msg) or "超时" in str(msg):
                     logger.critical(f"#{attempt} Session 过期: {msg}")
                     return False
 
-                logger.warning(f"#{attempt} ⏳ {msg} ({elapsed_ms:.0f}ms)")
+                logger.warning(f"#{attempt} {msg} ({elapsed_ms:.0f}ms)")
 
             except KeyboardInterrupt:
                 raise
