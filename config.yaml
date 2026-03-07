@@ -1,0 +1,18 @@
+# ── 抢课配置 ──
+
+grab:
+  interval: 1.0          # 请求间隔（秒）
+  jitter: 0.3            # 随机抖动幅度（秒），实际间隔 = interval ± jitter
+  max_attempts: 0        # 最大重试次数，0 表示无限制
+  request_timeout: 10    # 单次请求超时（秒）
+
+# ── URL 配置（通常无需修改） ──
+
+urls:
+  course_select: >-
+    https://zdbk.zju.edu.cn/jwglxt/xsxk/
+    zzxkghb_cxZzxkGhbIndex.html?gnmkdm=N253530&layout=default&su={su}
+  sso_bootstrap: >-
+    https://zjuam.zju.edu.cn/cas/login?
+    service=https%3A%2F%2Fzdbk.zju.edu.cn%2Fjwglxt%2Fxtgl%2Flogin_ssologin.html
+  index: "https://zdbk.zju.edu.cn/jwglxt/xtgl/index_initMenu.html?jsdm=06"
