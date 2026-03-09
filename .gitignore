@@ -3,3 +3,12 @@ debug.py
 开发文档.md
 data/
 __pycache__/
+*.pyc
+
+# mac
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+.cursor/

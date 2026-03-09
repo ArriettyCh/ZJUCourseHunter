@@ -1,3 +1,5 @@
+import random
+import threading
 import requests
 import time
 from loguru import logger
@@ -16,25 +18,36 @@ class CourseGrabber:
         "zzxkghb_cxZzxkGhbIndex.html?gnmkdm=N253530&layout=default&su={su}"
     )
 
-    def __init__(self, session: requests.Session, su: str):
+    def __init__(self, session: requests.Session, su: str,
+                 shutdown_event: threading.Event | None = None):
         self.session = session
         self.su = su
         self.running = False
+        self._shutdown = shutdown_event or threading.Event()
 
-        # 补充选课接口所需的 Headers（Session 中已有 User-Agent 和 Cookie）
         self.session.headers.update({
             "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
             "X-Requested-With": "XMLHttpRequest",
             "Referer": self.REFERER_TPL.format(su=su),
         })
 
-    def grab(self, course_data: dict, interval: float = 1.0) -> bool:
+    def grab(
+        self,
+        course_data: dict,
+        interval: float = 1.0,
+        jitter: float = 0.3,
+        max_attempts: int = 0,
+        request_timeout: int = 10,
+    ) -> bool:
         """
         开始抢课循环。
 
         Args:
             course_data: 包含 xn, xq, nj, xkkh, tabname 等字段
-            interval: 请求间隔（秒）
+            interval: 基础请求间隔（秒）
+            jitter: 随机抖动幅度（秒），实际间隔 = interval ± jitter
+            max_attempts: 最大重试次数，0 表示无限制
+            request_timeout: 单次请求超时（秒）
 
         Returns:
             True 表示抢课成功, False 表示因错误终止
@@ -42,7 +55,6 @@ class CourseGrabber:
         self.running = True
         url = f"{self.GRAB_URL}?gnmkdm=N253530&su={self.su}"
 
-        # 严格复用 v1.py 验证过的 6 个字段
         form_data = {
             "xn": course_data["xn"],
             "xq": course_data["xq"],
@@ -64,20 +76,26 @@ class CourseGrabber:
             logger.info(f"时间: {course_data['schedule']}")
         if course_data.get("location"):
             logger.info(f"地点: {course_data['location']}")
-        logger.info(f"请求间隔: {interval}s | 按 Ctrl+C 可随时停止\n")
+        limit_desc = f"最多 {max_attempts} 次" if max_attempts > 0 else "无限制"
+        logger.info(f"请求间隔: {interval}±{jitter}s | 重试: {limit_desc} | 按 Ctrl+C 可随时停止\n")
 
         attempt = 0
-        while self.running:
+        while self.running and not self._shutdown.is_set():
             attempt += 1
+
+            if max_attempts > 0 and attempt > max_attempts:
+                logger.error(f"已达到最大重试次数 ({max_attempts})，停止抢课。")
+                return False
+
             try:
                 t0 = time.time()
-                resp = self.session.post(url, data=form_data, timeout=10)
+                resp = self.session.post(url, data=form_data, timeout=request_timeout)
                 elapsed_ms = (time.time() - t0) * 1000
 
                 if resp.status_code != 200:
                     body_preview = resp.text[:200] if resp.text else "(空)"
                     logger.error(f"#{attempt} HTTP {resp.status_code} ({elapsed_ms:.0f}ms) | {body_preview}")
-                    time.sleep(interval)
+                    self._sleep_with_jitter(interval, jitter)
                     continue
 
                 result = resp.json()
@@ -94,16 +112,18 @@ class CourseGrabber:
 
                 logger.warning(f"#{attempt} {msg} ({elapsed_ms:.0f}ms)")
 
-            except KeyboardInterrupt:
-                raise
             except requests.exceptions.Timeout:
                 logger.error(f"#{attempt} 请求超时")
             except Exception as e:
                 logger.error(f"#{attempt} 异常: {e}")
 
-            time.sleep(interval)
+            self._sleep_with_jitter(interval, jitter)
 
         return False
+
+    def _sleep_with_jitter(self, interval: float, jitter: float):
+        actual = max(0.1, interval + random.uniform(-jitter, jitter))
+        self._shutdown.wait(timeout=actual)
 
     def stop(self):
         self.running = False
